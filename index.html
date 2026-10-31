@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="debt.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h11v4M4 7v10a2 2 0 0 0 2 2h14V9H6a2 2 0 0 1-2-2zM16 14h.01" /></svg>
+      </span>
+      <h1>Finance Tracker</h1>
+    </div>
+    <div class="header-controls">
+      <button type="button" class="chip-current" id="month-current" hidden>
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" /></svg>
+        This month
+      </button>
+
+      <div class="peoplepicker" id="peoplepicker">
+        <button type="button" class="people-trigger" id="people-trigger"
+                aria-haspopup="dialog" aria-expanded="false">
+          <span class="sr-only">Viewing: </span>
+          <span class="people-avatar" id="people-avatar"></span>
+          <span class="people-name" id="people-name"></span>
+          <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+
+        <div class="calendar people-popover" id="people-popover" role="dialog" aria-label="Choose whose money to view" hidden>
+          <div class="people-list" id="people-list"></div>
+          <div class="cal-footer">
+            <button type="button" class="cal-link" id="manage-people">Manage people</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="monthpicker" id="monthpicker">
+        <input type="hidden" id="month-filter" />
+        <div class="month-stepper" role="group" aria-label="Month">
+          <button type="button" class="step-btn" id="month-prev" aria-label="Previous month">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <button type="button" class="month-trigger" id="month-trigger"
+                  aria-haspopup="dialog" aria-expanded="false">
+            <span id="month-display"></span>
+            <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+          <button type="button" class="step-btn" id="month-next" aria-label="Next month">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
+        </div>
+
+        <div class="calendar month-popover" id="month-popover" role="dialog" aria-label="Choose a month" hidden>
+          <div class="cal-header">
+            <button type="button" class="cal-nav" id="mp-prev-year" aria-label="Previous year">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <span class="cal-title" id="mp-title" aria-live="polite"></span>
+            <button type="button" class="cal-nav" id="mp-next-year" aria-label="Next year">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+            </button>
+          </div>
+          <div class="month-grid" id="mp-grid"></div>
+          <div class="cal-footer">
+            <button type="button" class="cal-link" id="mp-this-month">This month</button>
+            <span class="cal-legend" id="mp-year-total"></span>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="icon-btn" id="backup-open" aria-haspopup="dialog"
+              aria-label="Backup and restore" title="Backup and restore">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+        <span class="icon-btn-dot" id="backup-dot" hidden></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-tabs" aria-label="Sections">
+    <div class="app-tabs-inner" role="tablist">
+      <button type="button" role="tab" class="app-tab" id="tab-spending" data-tab="spending"
+              aria-controls="spending-panel" aria-selected="true">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" /></svg>
+        Spending
+      </button>
+      <button type="button" role="tab" class="app-tab" id="tab-debt" data-tab="debt"
+              aria-controls="debt-panel" aria-selected="false" tabindex="-1">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18M7 15h4" /></svg>
+        Debt planner
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-top">
+    <!-- Shown when the browser refuses a save (storage full or blocked) -->
+    <section class="backup-banner is-error" id="save-error" role="alert" aria-labelledby="save-error-title" hidden>
+      <span class="backup-banner-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17h.01" /></svg>
+      </span>
+      <div class="backup-banner-text">
+        <h2 class="backup-banner-title" id="save-error-title">Your latest change wasn't saved</h2>
+        <p>This browser's storage is full or blocked, so changes may be gone when you close this page. Download a backup now to keep everything you see.</p>
+      </div>
+      <div class="backup-banner-actions">
+        <button type="button" class="btn-secondary" id="save-error-export">Download backup</button>
+        <button type="button" class="btn-ghost" id="save-error-dismiss">Dismiss</button>
+      </div>
+    </section>
+
+    <!-- Backup reminder -->
+    <section class="backup-banner" id="backup-banner" aria-labelledby="backup-banner-title" hidden>
+      <span class="backup-banner-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+      </span>
+      <div class="backup-banner-text">
+        <h2 class="backup-banner-title" id="backup-banner-title">Back up your data</h2>
+        <p id="backup-banner-msg"></p>
+      </div>
+      <div class="backup-banner-actions">
+        <button type="button" class="btn-secondary" id="backup-banner-export">Download backup</button>
+        <button type="button" class="btn-ghost" id="backup-banner-later">Remind me later</button>
+      </div>
+    </section>
+
+    <!-- Family view: who is included -->
+    <div class="family-bar" id="family-bar" role="group" aria-labelledby="family-bar-label" hidden>
+      <span class="family-bar-label" id="family-bar-label">Family view includes</span>
+      <div class="family-chips" id="family-chips"></div>
+    </div>
+  </div>
+
+  <main class="layout" id="spending-panel" role="tabpanel" aria-labelledby="tab-spending">
+    <!-- Add expense -->
+    <section class="card" aria-labelledby="add-heading">
+      <div class="card-head add-head">
+        <h2 id="add-heading">Add Expense</h2>
+        <div class="type-toggle" role="group" aria-label="Entry type">
+          <button type="button" class="type-btn" data-type="expense" aria-pressed="true">Expense</button>
+          <button type="button" class="type-btn" data-type="income" aria-pressed="false">Income</button>
+        </div>
+      </div>
+      <form id="expense-form" novalidate>
+        <div class="field">
+          <label for="amount">Amount</label>
+          <div class="amount-field">
+            <span aria-hidden="true">$</span>
+            <input type="number" id="amount" step="0.01" min="0.01" placeholder="0.00"
+                   inputmode="decimal" aria-describedby="form-error" required />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label-row">
+            <span class="field-label" id="date-label">Date</span>
+            <div class="date-shortcuts">
+              <button type="button" class="chip" data-day-offset="0" aria-pressed="false">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" /></svg>Today
+              </button>
+              <button type="button" class="chip" data-day-offset="-1" aria-pressed="false">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" /></svg>Yesterday
+              </button>
+            </div>
+          </div>
+
+          <div class="datepicker" id="datepicker">
+            <input type="hidden" id="date" />
+            <button type="button" class="date-trigger" id="date-trigger"
+                    aria-haspopup="dialog" aria-expanded="false"
+                    aria-labelledby="date-label date-display">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M3 10h18M8 3v4M16 3v4" />
+              </svg>
+              <span class="date-display" id="date-display"></span>
+              <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            <div class="calendar" id="calendar" role="dialog" aria-label="Choose a date" hidden>
+              <div class="cal-header">
+                <button type="button" class="cal-nav" id="cal-prev" aria-label="Previous month">
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+                </button>
+                <span class="cal-title" id="cal-title" aria-live="polite"></span>
+                <button type="button" class="cal-nav" id="cal-next" aria-label="Next month">
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+                </button>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div class="cal-grid" id="cal-grid"></div>
+              <div class="cal-footer">
+                <button type="button" class="cal-link" id="cal-today">Jump to today</button>
+                <span class="cal-legend"><i></i>Has expenses</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="description">Description</label>
+            <span class="counter" id="desc-count">0 / 80</span>
+          </div>
+          <input type="text" id="description" maxlength="80" placeholder="e.g. Groceries" required />
+        </div>
+        <div class="field" id="category-field">
+          <label for="category">Category</label>
+          <div class="select-wrap">
+            <select id="category" required>
+              <option value="Housing">Housing</option>
+              <option value="Food">Food</option>
+              <option value="Transport">Transport</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Other">Other</option>
+            </select>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+          <div class="custom-cat" id="custom-cat-field" hidden>
+            <input type="text" id="custom-category" maxlength="24" placeholder="Name it, e.g. Pets"
+                   aria-label="New category name" aria-describedby="custom-cat-hint" />
+            <span class="field-hint" id="custom-cat-hint">It's added to the list when you save the expense.</span>
+          </div>
+        </div>
+        <div class="field" id="person-field" hidden>
+          <label for="person" id="person-label">Paid by</label>
+          <div class="select-wrap">
+            <select id="person"></select>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+        </div>
+        <p class="error" id="form-error" role="alert" hidden>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0zM12 7.5v5.5M12 16.5h.01" /></svg>
+          <span id="form-error-text"></span>
+        </p>
+        <button type="submit" class="btn-primary">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <span id="submit-label">Add Expense</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Monthly summary -->
+    <section class="card" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Monthly Summary</h2>
+      <div class="total">
+        <span class="total-label" id="summary-month"></span>
+        <span class="total-amount" id="summary-total">$0.00</span>
+        <span class="total-count" id="summary-count"></span>
+      </div>
+      <div class="ledger" role="group" aria-labelledby="ledger-heading">
+        <h3 class="ledger-title" id="ledger-heading">Income vs spending</h3>
+        <dl class="ledger-rows">
+          <div class="ledger-row"><dt>Income</dt><dd class="income" id="sum-income">$0.00</dd></div>
+          <div class="ledger-row"><dt>Spent</dt><dd id="sum-spent">−$0.00</dd></div>
+          <div class="ledger-row ledger-result"><dt id="balance-label">Left over</dt><dd id="sum-balance">$0.00</dd></div>
+        </dl>
+        <div class="meter" id="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></div>
+        <p class="ledger-note" id="ledger-note"></p>
+      </div>
+      <div class="by-person" id="by-person" role="group" aria-labelledby="by-person-heading" hidden>
+        <h3 class="ledger-title" id="by-person-heading">By person</h3>
+        <ul class="by-person-list" id="by-person-list"></ul>
+      </div>
+      <h3 class="ledger-title by-category-title" id="by-category-heading" hidden>By category</h3>
+      <ul class="breakdown" id="category-breakdown"></ul>
+    </section>
+
+    <!-- Transactions -->
+    <section class="card card-wide card-tx" aria-labelledby="tx-heading">
+      <div class="card-head">
+        <h2 id="tx-heading">Transactions</h2>
+        <span>Newest first</span>
+      </div>
+      <ul class="transactions" id="transaction-list"></ul>
+      <div class="empty" id="empty-state">
+        <span class="empty-icon" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" /></svg>
+        </span>
+        <p>No expenses for this month yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Debt planner: diagnose, build, compare, act (debt.js) -->
+  <main class="debt" id="debt-panel" role="tabpanel" aria-labelledby="tab-debt" hidden>
+    <div class="debt-steps" role="tablist" aria-label="Debt planner steps">
+      <button type="button" role="tab" class="debt-step" id="step-a" data-step="a" aria-controls="debt-a" aria-selected="true">
+        <span class="debt-step-num" aria-hidden="true">1</span><span>Where you stand</span>
+      </button>
+      <button type="button" role="tab" class="debt-step" id="step-b" data-step="b" aria-controls="debt-b" aria-selected="false" tabindex="-1">
+        <span class="debt-step-num" aria-hidden="true">2</span><span>Build scenarios</span>
+      </button>
+      <button type="button" role="tab" class="debt-step" id="step-c" data-step="c" aria-controls="debt-c" aria-selected="false" tabindex="-1">
+        <span class="debt-step-num" aria-hidden="true">3</span><span>Compare</span>
+      </button>
+      <button type="button" role="tab" class="debt-step" id="step-d" data-step="d" aria-controls="debt-d" aria-selected="false" tabindex="-1">
+        <span class="debt-step-num" aria-hidden="true">4</span><span>Action plan</span>
+      </button>
+    </div>
+
+    <!-- Screen A: Debt diagnosis -->
+    <section class="debt-screen" id="debt-a" role="tabpanel" aria-labelledby="step-a">
+      <div class="card debt-empty" id="debt-empty" hidden>
+        <span class="empty-icon" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18M7 15h4" /></svg>
+        </span>
+        <h2>See what your debt really costs</h2>
+        <p>Add each card or loan you're paying off. You'll see how much of every payment goes to interest, then test moves like a balance transfer before you commit.</p>
+        <button type="button" class="btn-primary" data-action="add-debt">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          Add a debt
+        </button>
+      </div>
+
+      <div class="debt-a-body" id="debt-a-body">
+        <h2 class="debt-screen-title">Where you stand</h2>
+        <div class="hero-stats" id="hero-stats"></div>
+
+        <div class="card budget-card">
+          <div class="budget-row">
+            <label for="a-budget">You pay each month</label>
+            <div class="amount-field budget-input">
+              <span aria-hidden="true">$</span>
+              <input type="number" id="a-budget" min="0" step="10" inputmode="decimal" aria-describedby="a-budget-hint" />
+            </div>
+          </div>
+          <p class="field-hint" id="a-budget-hint"></p>
+          <ul class="debt-warnings" id="a-warnings"></ul>
+        </div>
+
+        <section class="card" aria-labelledby="split-heading">
+          <div class="card-head">
+            <h2 id="split-heading">Where your payment goes</h2>
+            <span id="split-month"></span>
+          </div>
+          <p class="split-lead" id="split-lead"></p>
+          <ul class="pay-split" id="pay-split"></ul>
+          <p class="split-legend" aria-hidden="true">
+            <span><i class="swatch swatch-interest"></i>Interest</span>
+            <span><i class="swatch swatch-principal"></i>Principal</span>
+          </p>
+        </section>
+
+        <section class="card" aria-labelledby="debts-heading">
+          <div class="card-head">
+            <h2 id="debts-heading">Your debts</h2>
+            <button type="button" class="btn-secondary btn-sm" data-action="add-debt">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              Add debt
+            </button>
+          </div>
+          <div class="table-scroll">
+            <table class="debt-table">
+              <thead>
+                <tr>
+                  <th scope="col">Debt</th>
+                  <th scope="col" class="num">Balance</th>
+                  <th scope="col" class="num">APR</th>
+                  <th scope="col" class="num">Minimum</th>
+                  <th scope="col" class="num">Interest / mo</th>
+                  <th scope="col" class="num">Utilization</th>
+                  <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="debt-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="cta-row">
+          <button type="button" class="btn-primary btn-cta" data-goto="b">
+            See how much you could save
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen B: Scenario builder -->
+    <section class="debt-screen" id="debt-b" role="tabpanel" aria-labelledby="step-b" hidden>
+      <h2 class="debt-screen-title">Build scenarios</h2>
+      <div class="scenario-bar" id="scenario-bar"></div>
+      <div class="builder">
+        <form class="card builder-inputs" id="builder-form" novalidate>
+          <div class="field">
+            <div class="field-label-row">
+              <label for="b-budget">Monthly budget</label>
+              <span class="field-hint">Shared by every scenario</span>
+            </div>
+            <div class="budget-slider">
+              <input type="range" id="b-budget-range" aria-label="Monthly budget" />
+              <div class="amount-field budget-input">
+                <span aria-hidden="true">$</span>
+                <input type="number" id="b-budget" min="0" step="10" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+
+          <fieldset class="move-types">
+            <legend class="field-label">Move to test</legend>
+            <div class="move-type-grid" id="move-types"></div>
+          </fieldset>
+
+          <div class="move-fields" id="move-fields"></div>
+
+          <div class="field">
+            <label for="b-name">Scenario name</label>
+            <input type="text" id="b-name" maxlength="40" />
+          </div>
+
+          <p class="error" id="builder-error" role="alert" hidden>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0zM12 7.5v5.5M12 16.5h.01" /></svg>
+            <span id="builder-error-text"></span>
+          </p>
+          <div class="builder-actions">
+            <button type="submit" class="btn-primary" id="b-save">Save scenario</button>
+            <button type="button" class="btn-ghost" id="b-delete" hidden>Delete</button>
+          </div>
+          <p class="field-hint" id="b-save-hint"></p>
+        </form>
+
+        <section class="card builder-results" id="builder-results" aria-labelledby="results-heading" aria-live="polite">
+          <h2 id="results-heading">Results</h2>
+          <div id="results-body"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Screen C: Roadmap & compare -->
+    <section class="debt-screen" id="debt-c" role="tabpanel" aria-labelledby="step-c" hidden>
+      <h2 class="debt-screen-title">Compare</h2>
+      <section class="card" aria-labelledby="compare-heading">
+        <div class="card-head">
+          <h2 id="compare-heading">Current path vs. your scenarios</h2>
+          <span id="compare-budget"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="compare-table" id="compare-table"></table>
+        </div>
+      </section>
+      <div class="chart-grid">
+        <section class="card" aria-labelledby="balance-chart-heading">
+          <h2 id="balance-chart-heading">Balance over time</h2>
+          <div class="chart" id="balance-chart"></div>
+          <ul class="chart-legend" id="balance-legend"></ul>
+        </section>
+        <section class="card" aria-labelledby="cost-chart-heading">
+          <h2 id="cost-chart-heading">Interest + fees paid so far</h2>
+          <div class="chart" id="cost-chart"></div>
+          <p class="chart-note" id="cost-note"></p>
+        </section>
+      </div>
+      <section class="card" aria-labelledby="timeline-heading">
+        <div class="card-head timeline-head">
+          <h2 id="timeline-heading">Payoff timeline</h2>
+          <div class="select-wrap select-sm">
+            <select id="timeline-pick" aria-label="Scenario to show"></select>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+        </div>
+        <p class="field-hint">Each month shows which debt gets the extra money. Select a month for its details.</p>
+        <div class="timeline" id="timeline"></div>
+        <div class="amort" id="amort" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <!-- Screen D: Action plan -->
+    <section class="debt-screen" id="debt-d" role="tabpanel" aria-labelledby="step-d" hidden>
+      <h2 class="debt-screen-title">Action plan</h2>
+      <div id="plan-body"></div>
+    </section>
+
+    <aside class="disclaimers" aria-labelledby="disclaimers-heading">
+      <h2 id="disclaimers-heading" class="ledger-title">Before you act</h2>
+      <ul>
+        <li>Results are estimates. They assume fixed APRs and on-time payments.</li>
+        <li>Offers depend on issuer approval and terms can change. Confirm terms with the issuer.</li>
+        <li>This tool is educational and is not financial advice.</li>
+        <li>Promo and loan terms are entered by you. Copy them from the issuer's offer or statement.</li>
+      </ul>
+    </aside>
+  </main>
+
+  <!-- Manage people -->
+  <dialog class="people-dialog" id="people-dialog" aria-labelledby="people-dialog-title">
+    <div class="dialog-head">
+      <h2 id="people-dialog-title">People</h2>
+      <button type="button" class="cal-nav" id="people-dialog-close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+    <p class="dialog-sub">Everyone here shares this device. Family view adds up the people you include. Someone can be removed once they have no entries.</p>
+    <ul class="manage-list" id="manage-list"></ul>
+    <form class="add-person" id="add-person-form" novalidate>
+      <label for="person-name">Add a person</label>
+      <div class="add-person-row">
+        <input type="text" id="person-name" maxlength="20" placeholder="e.g. Sam" aria-describedby="person-error" />
+        <button type="submit" class="btn-secondary">Add</button>
+      </div>
+      <p class="person-error" id="person-error" role="alert"></p>
+    </form>
+  </dialog>
+
+  <!-- Backup & restore -->
+  <dialog class="people-dialog backup-dialog" id="backup-dialog" aria-labelledby="backup-dialog-title">
+    <div class="dialog-head">
+      <h2 id="backup-dialog-title">Backup &amp; restore</h2>
+      <button type="button" class="cal-nav" id="backup-dialog-close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+    <p class="dialog-sub">Your data is saved only in this browser. Clearing browsing data deletes it, so keep a backup file somewhere safe.</p>
+
+    <div class="backup-section">
+      <h3 class="ledger-title">Back up</h3>
+      <p class="backup-status" id="backup-status"></p>
+      <button type="button" class="btn-primary" id="backup-export">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+        Download backup (.json)
+      </button>
+      <p class="field-hint">Includes every person, entry, debt and plan on this device.</p>
+    </div>
+
+    <div class="backup-section">
+      <h3 class="ledger-title">Restore</h3>
+      <input type="file" id="import-file" accept=".json,application/json" class="sr-only" tabindex="-1" aria-hidden="true" />
+      <button type="button" class="btn-secondary btn-block" id="import-choose">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" /></svg>
+        Choose backup file…
+      </button>
+
+      <div class="import-preview" id="import-preview" hidden>
+        <p class="import-file-name" id="import-file-name"></p>
+        <p class="import-summary" id="import-summary"></p>
+        <fieldset class="import-modes">
+          <legend class="sr-only">How to restore</legend>
+          <label class="import-mode">
+            <input type="radio" name="import-mode" value="merge" checked />
+            <span><strong>Add to what's here</strong><span>Keeps your current entries and adds the ones that are missing.</span></span>
+          </label>
+          <label class="import-mode">
+            <input type="radio" name="import-mode" value="replace" />
+            <span><strong>Replace everything</strong><span id="import-replace-note">Deletes what's on this device and restores the file.</span></span>
+          </label>
+        </fieldset>
+        <div class="import-actions">
+          <button type="button" class="btn-ghost" id="import-cancel">Cancel</button>
+          <button type="button" class="btn-secondary" id="import-confirm">Restore</button>
+        </div>
+      </div>
+
+      <p class="error" id="import-error" role="alert" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0zM12 7.5v5.5M12 16.5h.01" /></svg>
+        <span id="import-error-text"></span>
+      </p>
+      <div class="import-done" id="import-done" role="status" hidden>
+        <span id="import-done-text"></span>
+        <button type="button" class="cal-link" id="import-undo">Undo</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Add / edit a debt -->
+  <dialog class="people-dialog debt-dialog" id="debt-dialog" aria-labelledby="debt-dialog-title">
+    <form id="debt-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="debt-dialog-title">Add a debt</h2>
+        <button type="button" class="cal-nav" id="debt-dialog-close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <p class="dialog-sub">Copy the numbers from your latest statement.</p>
+
+      <fieldset class="seg-field">
+        <legend class="field-label">Type</legend>
+        <div class="type-toggle">
+          <label class="seg"><input type="radio" name="debt-kind" value="card" checked /><span>Credit card</span></label>
+          <label class="seg"><input type="radio" name="debt-kind" value="loan" /><span>Loan</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="d-name">Name</label>
+        <input type="text" id="d-name" maxlength="30" placeholder="e.g. Visa" />
+      </div>
+
+      <div class="field" id="d-owner-field" hidden>
+        <label for="d-owner">Whose debt</label>
+        <div class="select-wrap">
+          <select id="d-owner"></select>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </div>
+      </div>
+
+      <div class="field-pair">
+        <div class="field">
+          <label for="d-balance">Balance</label>
+          <div class="amount-field amount-sm"><span aria-hidden="true">$</span><input type="number" id="d-balance" min="0" step="0.01" inputmode="decimal" /></div>
+        </div>
+        <div class="field">
+          <label for="d-apr">APR</label>
+          <div class="amount-field amount-sm suffix"><input type="number" id="d-apr" min="0" max="99" step="0.01" inputmode="decimal" /><span aria-hidden="true">%</span></div>
+        </div>
+      </div>
+
+      <div class="card-only">
+        <div class="extra-balances" id="d-extra-balances"></div>
+        <button type="button" class="cal-link" id="d-add-balance">+ Add a balance at another APR</button>
+        <p class="field-hint">For example a cash advance. Payments above the minimum go to the highest APR first.</p>
+
+        <div class="field-pair">
+          <div class="field">
+            <label for="d-limit">Credit limit <span class="optional">(optional)</span></label>
+            <div class="amount-field amount-sm"><span aria-hidden="true">$</span><input type="number" id="d-limit" min="0" step="1" inputmode="decimal" /></div>
+          </div>
+          <div class="field">
+            <label for="d-due">Payment due day</label>
+            <div class="select-wrap"><select id="d-due"></select><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="d-min-rule">Minimum payment rule</label>
+          <div class="select-wrap">
+            <select id="d-min-rule">
+              <option value="standard">Greater of $35 or 1% of balance + interest (most cards)</option>
+              <option value="percent">A percent of the balance, with a floor</option>
+            </select>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+        </div>
+        <div class="field-pair" id="d-min-percent" hidden>
+          <div class="field">
+            <label for="d-min-pct">Percent of balance</label>
+            <div class="amount-field amount-sm suffix"><input type="number" id="d-min-pct" min="1" max="10" step="0.5" value="2" /><span aria-hidden="true">%</span></div>
+          </div>
+          <div class="field">
+            <label for="d-min-floor">But at least</label>
+            <div class="amount-field amount-sm"><span aria-hidden="true">$</span><input type="number" id="d-min-floor" min="0" step="1" value="25" /></div>
+          </div>
+        </div>
+
+        <label class="check-row"><input type="checkbox" id="d-has-promo" /> This card has a promo rate right now</label>
+        <div class="promo-box" id="d-promo" hidden>
+          <div class="field-pair">
+            <div class="field">
+              <label for="d-promo-apr">Promo APR</label>
+              <div class="amount-field amount-sm suffix"><input type="number" id="d-promo-apr" min="0" max="99" step="0.01" value="0" /><span aria-hidden="true">%</span></div>
+            </div>
+            <div class="field">
+              <label for="d-promo-end">Promo ends</label>
+              <input type="month" id="d-promo-end" />
+            </div>
+          </div>
+          <p class="field-hint">The APR above applies after the promo ends.</p>
+          <label class="check-row"><input type="checkbox" id="d-promo-deferred" /> Deferred interest (store card): all interest is charged back if not paid in full by the end</label>
+        </div>
+      </div>
+
+      <div class="loan-only" hidden>
+        <div class="field-pair">
+          <div class="field">
+            <label for="d-payment">Monthly payment</label>
+            <div class="amount-field amount-sm"><span aria-hidden="true">$</span><input type="number" id="d-payment" min="0" step="0.01" inputmode="decimal" /></div>
+          </div>
+          <div class="field">
+            <label for="d-due-loan">Payment due day</label>
+            <div class="select-wrap"><select id="d-due-loan"></select><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="error" id="debt-error" role="alert" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0zM12 7.5v5.5M12 16.5h.01" /></svg>
+        <span id="debt-error-text"></span>
+      </p>
+      <div class="import-actions">
+        <button type="button" class="btn-ghost" id="debt-cancel">Cancel</button>
+        <button type="submit" class="btn-primary btn-inline" id="debt-save">Save debt</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js"></script>
+  <script src="debt-engine.js"></script>
+  <script src="debt.js"></script>
+</body>
+</html>
