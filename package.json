@@ -1,0 +1,12 @@
+{
+  "name": "finance-tracker",
+  "description": "Local-first personal finance tracker and debt payoff planner that runs entirely in the browser",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors and local tooling
+.vscode/
+.idea/
+.claude/
+
+# Node
+node_modules/
+npm-debug.log*
+*.log
+coverage/
+
+# Exported backups hold real financial data: never commit them
+finance-tracker-backup*.json
