@@ -8,10 +8,12 @@ A personal finance app that runs entirely in your browser: log spending and inco
 
 Open `index.html` in a browser (double-click it). That's it: no install and no build step.
 
-To run the tests, you need [Node.js](https://nodejs.org) 22 or later:
+To run the tests and the linter, you need [Node.js](https://nodejs.org) 22 or later:
 
 ```bash
+npm install   # once: dev tools only (ESLint); the app itself has no dependencies
 npm test
+npm run lint
 ```
 
 ## What it does
@@ -86,7 +88,8 @@ docs/               Architecture review and ADR-001
 
 - `main` always works. Branch off it with `feat/…`, `fix/…`, `docs/…` or `chore/…`, open a pull request, and squash-merge once CI is green.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) (`feat(debt): …`, `fix: …`).
-- CI runs `npm test` on Node 22, 24 and 26 for every push to `main` and every pull request.
+- CI runs `npm test` on Node 22, 24 and 26, plus `npm run lint`, for every push to `main` and every pull request.
+- ESLint knows which names each script borrows from the other (see [eslint.config.js](eslint.config.js)). If you add or rename a shared helper, update that list.
 
 ## Known limitations
 
